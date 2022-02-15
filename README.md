@@ -1,6 +1,6 @@
 # Tower of Hanoi - the CLI game
 
-You can play this game online on [replit](https://replit.com/@fswerneck/hanoi-tower#src/main.rs).
+You can play this game online on [replit](https://replit.com/@fswerneck/hanoi-tower-rust-v2).
 
 ## Objective
 Move all the discs from tower **1** to tower **3**.
