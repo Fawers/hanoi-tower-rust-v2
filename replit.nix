@@ -1,9 +1,5 @@
-{ pkgs }: {
+{ pkgs, legacyPolygott }: {
 	deps = [
-		pkgs.rustc
-		pkgs.rustfmt
-		pkgs.cargo
-		pkgs.cargo-edit
-        pkgs.rust-analyzer
-	];
+		pkgs.bashInteractive
+	] ++ legacyPolygott;
 }
