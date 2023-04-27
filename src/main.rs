@@ -4,5 +4,5 @@ fn main() {
     let mut g = Game::new();
 
     println!("{:?}", g);
-    g.play();
+    g.play(&g.default_take_input());
 }

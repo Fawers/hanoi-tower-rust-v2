@@ -7,9 +7,9 @@ impl Disc {
     }
 }
 
-impl ToString for Disc {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Disc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let disc_length = self.0 * 2 - 1;
-        format!("{}", "—".repeat(disc_length))
+        write!(f, "{}", "—".repeat(disc_length))
     }
 }

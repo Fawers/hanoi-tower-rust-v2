@@ -1,6 +1,7 @@
 use super::disc::Disc;
 use super::tower::{Tower, TowerPushError};
 use DropError::*;
+use GrabError::*;
 
 #[derive(Debug)]
 pub struct Hand(Option<Disc>);
@@ -10,27 +11,26 @@ impl Hand {
         Hand(None)
     }
 
-    pub fn grab_from(&mut self, t: &mut Tower) -> bool {
-        if let Some(d) = t.pop() {
-            self.0 = Some(d);
-            return true;
-        }
+    pub fn grab_from(&mut self, t: &mut Tower) -> Result<(), GrabError> {
+        let od = self.0.as_ref().map_or_else(
+            || t.pop().map_or_else(
+                || Err(EmptyTower),
+                |d| Ok(d)
+            ),
+            |_| Err(DiscAlreadyInHand)
+        );
 
-        false
+        od.map(|d| self.0 = Some(d))
     }
 
     pub fn drop_onto(&mut self, t: &mut Tower) -> Result<(), DropError> {
-        if let Some(d) = self.0.take() {
-            match t.push(d) {
-                Ok(()) => Ok(()),
-                Err((tower_error, d)) => {
-                    self.0 = Some(d);
-                    Err(CannotDrop(tower_error))
-                }
-            }
-        } else {
-            Err(NothingToDrop)
-        }
+        self.0.take().map_or_else(
+            || Err(NothingToDrop),
+            |d| t.push(d).or_else(|(tower_error, d)| {
+                self.0 = Some(d);
+                Err(CannotDrop(tower_error))
+            })
+        )
     }
 
     pub fn empty(&self) -> bool {
@@ -38,14 +38,14 @@ impl Hand {
     }
 }
 
-impl ToString for Hand {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Hand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match &self.0 {
             Some(d) => format!("Hand is holding disc of size {}", d.0),
             None => "Hand is empty".to_string()
         };
 
-        format!("{}", s)
+        write!(f, "{}", s)
     }
 }
 
@@ -53,4 +53,10 @@ impl ToString for Hand {
 pub enum DropError {
     NothingToDrop,
     CannotDrop(TowerPushError)
+}
+
+#[derive(Debug)]
+pub enum GrabError {
+    DiscAlreadyInHand,
+    EmptyTower
 }
