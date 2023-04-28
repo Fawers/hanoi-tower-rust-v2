@@ -5,7 +5,7 @@ pub mod hand;
 use std::io;
 
 use disc::Disc;
-use tower::{Tower, TowerPushError};
+use tower::{Tower, TowerPushError::*};
 use hand::{Hand, DropError, GrabError};
 use crate::tools::take_input::TakeInput;
 
@@ -45,7 +45,7 @@ impl Game {
         while !self.solved() {
             println!("\nTowers:");
             self.print_towers();
-            println!("\nStatus: {}", self.hand.to_string());
+            println!("\nStatus: {}", self.hand);
 
             println!("What tower are you {}? (`q` to quit)",
                      if self.hand.empty() { "taking the disc from" }
@@ -67,53 +67,25 @@ impl Game {
             match self.hand.grab_from(&mut self.towers[tower]) {
                 Ok(_) => println!("Took disc from tower {}", tower+1),
                 Err(GrabError::EmptyTower) => println!("Can't take discs from empty tower."),
-                Err(GrabError::DiscAlreadyInHand) => {
-                    match self.hand.drop_onto(&mut self.towers[tower]) {
-                        Ok(()) => {
-                            println!("Dropped disc onto tower {}.", tower+1);
-                            self.moves += 1;
-                        },
-                        Err(DropError::NothingToDrop) => println!("Nothing to drop."),
-                        Err(DropError::CannotDrop(TowerPushError::DiscTooLarge)) => {
-                            println!("The disc you want to drop is too large.");
-                        },
-                        Err(DropError::CannotDrop(TowerPushError::TowerIsFull)) => {
-                            println!("The tower can't fit any more discs.");
-                        }
-                    }
-                }
-            };
-            
-            /*
-            if self.hand.empty() {
-                if self.hand.grab_from(&mut self.towers[tower]) {
-                    println!("Took the disc from tower {}.", tower+1);
-                }
-                else {
-                    println!("Couldn't take a disc from tower {}.", tower+1);
-                }
-            }
-            else {
-                match self.hand.drop_onto(&mut self.towers[tower]) {
-                    Ok(()) => {
+                Err(GrabError::DiscAlreadyInHand) => match self.hand.drop_onto(&mut self.towers[tower]) {
+                    Ok(_) => {
                         println!("Dropped disc onto tower {}.", tower+1);
                         self.moves += 1;
                     },
                     Err(DropError::NothingToDrop) => println!("Nothing to drop."),
-                    Err(DropError::CannotDrop(TowerPushError::DiscTooLarge)) => {
+                    Err(DropError::CannotDrop(DiscTooLarge)) => {
                         println!("The disc you want to drop is too large.");
                     },
-                    Err(DropError::CannotDrop(TowerPushError::TowerIsFull)) => {
+                    Err(DropError::CannotDrop(TowerIsFull)) => {
                         println!("The tower can't fit any more discs.");
                     }
-                };
-            }
-            // */
+                }
+            };
         }
 
         if self.solved() {
             self.print_towers();
-            println!("You moved all the discs in {} moves! Congratulations!", self.moves);
+            println!("\nYou moved all the discs in {} moves! Congratulations!", self.moves);
         }
         else {
             println!("You quit the game after {} moves. See you later, I guess?", self.moves);
@@ -121,13 +93,11 @@ impl Game {
     }
 
     fn print_towers(&self) {
-        for i in (0..5).rev() {
-            for t in &self.towers {
-                if let Some(d) = t.get(i) {
-                    print!("{}{:^9}{} ", size_to_ansicolor(d.0), d.to_string(), "\x1b[0m");
-                } else {
-                    print!("{:^9} ", "|");
-                }
+        let mut lines_vec = self.towers.iter().map(Tower::lines).collect::<Vec<_>>();
+
+        for _ in 0..5 {
+            for lines in &mut lines_vec {
+                print!("{}", lines.next().unwrap());
             }
             println!("");
         }
@@ -169,16 +139,4 @@ pub enum PlayerInput {
     OutOfRange(usize),
     Quit,
     Error(String)
-}
-
-fn size_to_ansicolor(size: usize) -> &'static str {
-    match size {
-        1 => "\x1b[31m", // red
-        2 => "\x1b[32m", // blue
-        3 => "\x1b[34m", // green
-        4 => "\x1b[35m", // magenta
-        5 => "\x1b[36m", // cyan
-        6 => "\x1b[33m", // yellow
-        _ => ""
-    }
 }

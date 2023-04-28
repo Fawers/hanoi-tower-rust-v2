@@ -12,20 +12,18 @@ impl Hand {
     }
 
     pub fn grab_from(&mut self, t: &mut Tower) -> Result<(), GrabError> {
-        let od = self.0.as_ref().map_or_else(
-            || t.pop().map_or_else(
-                || Err(EmptyTower),
-                |d| Ok(d)
-            ),
-            |_| Err(DiscAlreadyInHand)
-        );
-
-        od.map(|d| self.0 = Some(d))
+        self.0.as_ref()
+            .map_or_else(
+                || t.pop().map_or(    Err(EmptyTower),
+                                  |d| Ok(d)),
+                |_| Err(DiscAlreadyInHand)
+            )
+            .map(|d| self.0 = Some(d))
     }
 
     pub fn drop_onto(&mut self, t: &mut Tower) -> Result<(), DropError> {
-        self.0.take().map_or_else(
-            || Err(NothingToDrop),
+        self.0.take().map_or(
+            Err(NothingToDrop),
             |d| t.push(d).or_else(|(tower_error, d)| {
                 self.0 = Some(d);
                 Err(CannotDrop(tower_error))

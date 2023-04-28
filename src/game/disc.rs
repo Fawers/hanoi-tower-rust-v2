@@ -5,6 +5,12 @@ impl Disc {
     pub fn larger_than(&self, d: &Disc) -> bool {
         self.0 > d.0
     }
+
+    pub fn to_ansicolor(&self) -> &'static str {
+        ["\x1b[31m", "\x1b[32m",
+         "\x1b[33m", "\x1b[34m",
+         "\x1b[35m", "\x1b[36m"][self.0 % 6]
+    }
 }
 
 impl std::fmt::Display for Disc {
