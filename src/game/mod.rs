@@ -7,7 +7,7 @@ use std::io;
 use disc::Disc;
 use tower::{Tower, TowerPushError::*};
 use hand::{Hand, DropError, GrabError};
-use crate::tools::take_input::TakeInput;
+
 
 #[derive(Debug)]
 pub struct Game {
@@ -31,14 +31,12 @@ impl Game {
         g
     }
 
-    pub fn default_take_input(&self) -> Player {
-        Player {
-            num_towers: self.towers.len()
-        }
+    pub fn default_read_input(&self) -> impl FnMut() -> UserInput {
+        read_input(self.towers.len())
     }
 
-    pub fn play<T>(&mut self, stdin: &T)
-    where T: TakeInput<Output=PlayerInput>
+    pub fn play<F>(&mut self, mut read_input: F)
+    where F: FnMut() -> UserInput
     {
         println!("Welcome to Fawers's Hanoi Tower game!");
 
@@ -51,14 +49,14 @@ impl Game {
                      if self.hand.empty() { "taking the disc from" }
                      else                 { "dropping the disc onto" });
 
-            let tower = match stdin.take_input() {
-                PlayerInput::Tower(t) => t,
-                PlayerInput::Quit => break,
-                PlayerInput::OutOfRange(n) => {
+            let tower = match read_input() {
+                UserInput::Tower(t) => t,
+                UserInput::Quit => break,
+                UserInput::OutOfRange(n) => {
                     println!("Tower {} is out of range.", n);
                     continue;
                 },
-                PlayerInput::Error(e) => {
+                UserInput::Error(e) => {
                     eprintln!("error: {}", e);
                     continue;
                 }
@@ -110,31 +108,26 @@ impl Game {
     }
 }
 
-pub struct Player {
-    pub num_towers: usize
-}
-
-impl TakeInput for Player {
-    type Output = PlayerInput;
     
-    fn take_input(&self) -> PlayerInput {
+fn read_input(num_towers: usize) -> impl FnMut() -> UserInput {
+    move || {
         let mut input = String::new();
         io::stdin().read_line(&mut input).expect("Can't read from stdin");
         let input = input.trim();
-
+    
         if input == "q" {
-            return PlayerInput::Quit;
+            return UserInput::Quit;
         }
-
+    
         match input.parse::<usize>() {
-            Ok(n) if (1..=self.num_towers).contains(&n) => PlayerInput::Tower(n-1),
-            Ok(n) => PlayerInput::OutOfRange(n),
-            Err(e) => PlayerInput::Error(format!("couldn't parse `{}`: {}", input, e))
+            Ok(n) if (1..=num_towers).contains(&n) => UserInput::Tower(n-1),
+            Ok(n) => UserInput::OutOfRange(n),
+            Err(e) => UserInput::Error(format!("couldn't parse `{}`: {}", input, e))
         }
     }
 }
 
-pub enum PlayerInput {
+pub enum UserInput {
     Tower(usize),
     OutOfRange(usize),
     Quit,
